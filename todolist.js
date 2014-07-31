@@ -1,13 +1,17 @@
-// ADD_NEW_TODO 라는 변수명은 이 코드의 제목같은 용도로 사용했습니다. 특별한 의도가 담겨있진 않습니다..
 var ADD_NEW_TODO = (function() {
-    // 이 변수는 아래 함수에서 접근할 때 this가 아니면 접근이 안되는줄 알고 썼는데 확인해보니 제가 착각했네요.
-    // private변수로 쓰는게 더 맞는 것 같아서 수정했습니다.
     var CONST_NUM = {
         ENTER_KEYCODE : 13
     };
 
+    /*
+     ???????????????????????????????????????????????????
+     새로 삽입하는 DOM에 fadeIn 애니메이션을 집어넣으려고 일부러
+     inline script로 opacity 속성을 0으로 줬는데 이렇게 하는 것 말고는 방법이 없을까요?
+     ???????????????????????????????????????????????????
+     */
+
     var sTemplate =
-        "<li>" +
+        "<li style='opacity : 0'>" +
             "<div class='view'>" +
                 "<input class='toggle' type='checkbox'>" +
                 "<label>{{todo}}</label>" +
@@ -15,24 +19,71 @@ var ADD_NEW_TODO = (function() {
             "</div>" +
         "</li>";
 
-    var createNewTodoDomString = function(sTodo) {
-        return Mustache.render(sTemplate, {todo : sTodo});
-    };
+    // Animation 관련 함수를 모아놓은 객체
+    var ANIMATION = {
+        fadeOut : function (elTarget) {
+            elTarget.style.webkitAnimation = "fadeOut 500ms";
+        },
 
-    var addNewTodoDom = function(event) {
-        if (event.keyCode === CONST_NUM.ENTER_KEYCODE) {
-            var sTodo = event.target.value;
-            var sDom = createNewTodoDomString(sTodo);
-
-            document.getElementById("todo-list").insertAdjacentHTML("beforeend", sDom);
-
-            event.target.value = "";
+        fadeIn : function (elTarget) {
+            elTarget.style.webkitAnimation = "fadeIn 500ms";
         }
     };
 
+    // DOM 조작을 위한 함수를 모아놓은 객체
+    var DOM_MUTAION = {
+        createNewTodoString : function (sTodo) {
+            return Mustache.render(sTemplate, {todo : sTodo});
+        },
+
+        addNewTodo : function (elTarget) {
+            var sTodo = elTarget.value;
+            elTarget.value = "";
+
+            var sDom = DOM_MUTAION.createNewTodoString(sTodo);
+
+            document.getElementById("todo-list").insertAdjacentHTML("beforeend", sDom);
+            var elAdded = document.getElementById("todo-list").lastChild;
+
+            elAdded.addEventListener("webkitAnimationEnd", function some(e) {
+                elAdded.removeEventListener("webkitAnimationEnd", some);
+                elAdded.style.opacity = 1;
+            });
+
+            ANIMATION.fadeIn(elAdded);
+        },
+
+        removeTodo : function (elTarget) {
+            var elParent = elTarget.parentNode;
+            elTarget.addEventListener("webkitAnimationEnd", function some(e) {
+                elTarget.removeEventListener("webkitAnimationEnd", some);
+                elParent.removeChild(elTarget);
+            });
+
+            ANIMATION.fadeOut(elTarget);
+        },
+
+        toggleComplete : function (elTarget) {
+            elTarget.parentNode.parentNode.classList.toggle("completed");
+        }
+    };
+
+    // 초기화 함수
     document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("new-todo").addEventListener("keydown", function (e) {
-            addNewTodoDom(e);
+            if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {
+                DOM_MUTAION.addNewTodo(e.target);
+            }
+        });
+
+        document.getElementById("todo-list").addEventListener("click", function(e) {
+            var elTarget = e.target;
+            var aClassList = elTarget.classList;
+            if (aClassList.contains("toggle")) {
+                DOM_MUTAION.toggleComplete(elTarget);
+            } else if (aClassList.contains("destroy")) {
+                DOM_MUTAION.removeTodo(e.target.parentNode.parentNode);
+            }
         });
     });
 })();
