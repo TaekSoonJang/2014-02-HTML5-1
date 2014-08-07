@@ -1,23 +1,161 @@
-var ADD_NEW_TODO = (function() {
+function TODO(sUserName) {
+
     var CONST_NUM = {
         ENTER_KEYCODE : 13
     };
 
-    /*
-     ???????????????????????????????????????????????????
-     새로 삽입하는 DOM에 fadeIn 애니메이션을 집어넣으려고 일부러
-     inline script로 opacity 속성을 0으로 줬는데 이렇게 하는 것 말고는 방법이 없을까요?
-     ???????????????????????????????????????????????????
-     */
-
     var sTemplate =
-        "<li style='opacity : 0'>" +
+        "{{#param}}" +
+        "<li {{complete}}  data-id='{{id}}' {{style}}>" +
             "<div class='view'>" +
                 "<input class='toggle' type='checkbox'>" +
                 "<label>{{todo}}</label>" +
                 "<button class='destroy'></button>" +
             "</div>" +
-        "</li>";
+        "</li>" +
+        "{{/param}}";
+
+    var AJAX = {
+        sUserId : sUserName,
+
+        /*
+            param object
+            {
+                method      :   String,
+                url         :   String,
+                async       :   boolean,
+                header      : {
+                                key : value
+                              },
+                callback    : {
+                                success : function (sRes),
+                                fail    : function (sRes)
+                              },
+                methodParam       :   String
+            }
+         */
+        call : function (param) {
+            var xhr = new XMLHttpRequest();
+            xhr.open(param.method, param.url, param.async);
+
+            for (var key in param.header) {
+                xhr.setRequestHeader(key, param.header[key]);
+            }
+
+            xhr.addEventListener("load",function(e) {
+                if (this.status == 200) {
+                    var sRes = xhr.responseText;
+                    param.callback.success(sRes);
+                } else {
+                    param.callback.fail(sRes);
+                }
+            });
+            xhr.send(param.methodParam);
+        },
+
+        saveTodo : function(elTarget) {
+            var sTodo = elTarget.value;
+            elTarget.value = "";
+            this.call({
+                method   : 'PUT',
+                url      : 'http://ui.nhnnext.org:3333/' + this.sUserId,
+                async    : true,
+                header   : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8'},
+                callback : {
+                    success : function(sRes) {
+                        var oResponse = JSON.parse(sRes);
+                        var nInsertId = oResponse.insertId;
+                        console.log("saved");
+                        DOM_MUTAION.addNewTodo(nInsertId, sTodo);
+                    },
+
+                    fail    : function(sRes) {
+                        console.log("fail");
+                    }
+                },
+                methodParam : "todo=" + sTodo
+            });
+        },
+
+        completeTodo : function(elTarget) {
+            var liTodo = elTarget.parentNode.parentNode;
+            var nTodoId = liTodo.dataset.id;
+            // -> completed
+            var nComplete = 1;
+            // -> not completed
+            if (liTodo.classList.contains('completed')) {
+                nComplete = 0;
+            }
+
+            this.call({
+                method  : 'POST',
+                url     : 'http://ui.nhnnext.org:3333/' + this.sUserId + '/' + nTodoId,
+                async   : true,
+                header  : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8' },
+                callback : {
+                    success : function(sRes) {
+                        DOM_MUTAION.toggleComplete(elTarget);
+                        console.log("complete");
+                    },
+
+                    fail : function(sRes) {
+                        console.log("fail");
+                    }
+                },
+                methodParam : "complete=" + nComplete
+            });
+        },
+
+        deleteTodo : function(elTarget) {
+            var liTodo = elTarget.parentNode.parentNode;
+            var nTodoId = liTodo.dataset.id;
+
+            this.call({
+                method   : 'DELETE',
+                url      : 'http://ui.nhnnext.org:3333/' + this.sUserId + '/' + nTodoId,
+                async    : true,
+                header   : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8' },
+                callback : {
+                    success : function(sRes) {
+                        DOM_MUTAION.removeTodo(liTodo);
+                        console.log("remove");
+                    },
+
+                    fail : function(sRes) {
+                        console.log("fail");
+                    }
+                }
+            });
+        },
+
+        loadAllTodos : function() {
+            this.call({
+                method   : 'GET',
+                url      : 'http://ui.nhnnext.org:3333/' + this.sUserId,
+                async    : true,
+                header   : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8' },
+                callback : {
+                    success : function(sRes) {
+                        var aTodos = JSON.parse(sRes);
+                        console.log(aTodos);
+                        aTodos.map(function(oItem) {
+                            if (oItem.completed === 1) {
+                                oItem.complete = 'class="completed"';
+                            }
+                        });
+
+                        var sResultDom = DOM_MUTAION.createNewTodoString(aTodos);
+
+                        document.getElementById('todo-list').insertAdjacentHTML('beforeend', sResultDom);
+                    },
+
+                    fail : function(sRes) {
+                        console.log("fail");
+                    }
+                }
+            });
+        }
+    };
 
     // Animation 관련 함수를 모아놓은 객체
     var ANIMATION = {
@@ -32,15 +170,12 @@ var ADD_NEW_TODO = (function() {
 
     // DOM 조작을 위한 함수를 모아놓은 객체
     var DOM_MUTAION = {
-        createNewTodoString : function (sTodo) {
-            return Mustache.render(sTemplate, {todo : sTodo});
+        createNewTodoString : function (aParam) {
+            return Mustache.render(sTemplate, { param : aParam});
         },
 
-        addNewTodo : function (elTarget) {
-            var sTodo = elTarget.value;
-            elTarget.value = "";
-
-            var sDom = DOM_MUTAION.createNewTodoString(sTodo);
+        addNewTodo : function (nId, sTodo) {
+            var sDom = DOM_MUTAION.createNewTodoString([{id : nId, todo : sTodo, style : 'style = "opacity : 0"'}]);
 
             document.getElementById("todo-list").insertAdjacentHTML("beforeend", sDom);
             var elAdded = document.getElementById("todo-list").lastChild;
@@ -53,14 +188,14 @@ var ADD_NEW_TODO = (function() {
             ANIMATION.fadeIn(elAdded);
         },
 
-        removeTodo : function (elTarget) {
-            var elParent = elTarget.parentNode;
-            elTarget.addEventListener("webkitAnimationEnd", function some(e) {
-                elTarget.removeEventListener("webkitAnimationEnd", some);
-                elParent.removeChild(elTarget);
+        removeTodo : function (liTodo) {
+            var ulParent = liTodo.parentNode;
+            liTodo.addEventListener("webkitAnimationEnd", function some(e) {
+                liTodo.removeEventListener("webkitAnimationEnd", some);
+                ulParent.removeChild(liTodo);
             });
 
-            ANIMATION.fadeOut(elTarget);
+            ANIMATION.fadeOut(liTodo);
         },
 
         toggleComplete : function (elTarget) {
@@ -69,21 +204,24 @@ var ADD_NEW_TODO = (function() {
     };
 
     // 초기화 함수
-    document.addEventListener("DOMContentLoaded", function () {
-        document.getElementById("new-todo").addEventListener("keydown", function (e) {
-            if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {
-                DOM_MUTAION.addNewTodo(e.target);
-            }
-        });
+    this.init = function() {
+        document.addEventListener("DOMContentLoaded", function () {
+            AJAX.loadAllTodos();
+            document.getElementById("new-todo").addEventListener("keydown", function (e) {
+                if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {
+                    AJAX.saveTodo(e.target);
+                }
+            });
 
-        document.getElementById("todo-list").addEventListener("click", function(e) {
-            var elTarget = e.target;
-            var aClassList = elTarget.classList;
-            if (aClassList.contains("toggle")) {
-                DOM_MUTAION.toggleComplete(elTarget);
-            } else if (aClassList.contains("destroy")) {
-                DOM_MUTAION.removeTodo(e.target.parentNode.parentNode);
-            }
+            document.getElementById("todo-list").addEventListener("click", function(e) {
+                var elTarget = e.target;
+                var aClassList = elTarget.classList;
+                if (aClassList.contains("toggle")) {
+                    AJAX.completeTodo(elTarget);
+                } else if (aClassList.contains("destroy")) {
+                    AJAX.deleteTodo(elTarget);
+                }
+            });
         });
-    });
-})();
+    };
+}
