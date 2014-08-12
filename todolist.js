@@ -8,7 +8,7 @@ function TODO(sUserName) {
         "{{#param}}" +
         "<li {{complete}}  data-id='{{id}}' {{style}}>" +
             "<div class='view'>" +
-                "<input class='toggle' type='checkbox'>" +
+                "<input class='toggle' type='checkbox' {{checked}}>" +
                 "<label>{{todo}}</label>" +
                 "<button class='destroy'></button>" +
             "</div>" +
@@ -102,7 +102,7 @@ function TODO(sUserName) {
                         console.log("fail");
                     }
                 },
-                methodParam : "complete=" + nComplete
+                methodParam : "completed=" + nComplete
             });
         },
 
@@ -137,16 +137,7 @@ function TODO(sUserName) {
                 callback : {
                     success : function(sRes) {
                         var aTodos = JSON.parse(sRes);
-                        console.log(aTodos);
-                        aTodos.map(function(oItem) {
-                            if (oItem.completed === 1) {
-                                oItem.complete = 'class="completed"';
-                            }
-                        });
-
-                        var sResultDom = DOM_MUTAION.createNewTodoString(aTodos);
-
-                        document.getElementById('todo-list').insertAdjacentHTML('beforeend', sResultDom);
+                        DOM_MUTAION.addAllNewTodo(aTodos);
                     },
 
                     fail : function(sRes) {
@@ -170,6 +161,19 @@ function TODO(sUserName) {
 
     // DOM 조작을 위한 함수를 모아놓은 객체
     var DOM_MUTAION = {
+        addAllNewTodo : function(aTodos) {
+            console.log(aTodos);
+            aTodos.map(function(oItem) {
+                if (oItem.completed === 1) {
+                    oItem.complete = 'class=completed';
+                    oItem.checked = 'checked';
+                }
+            });
+
+            var sResultDom = DOM_MUTAION.createNewTodoString(aTodos);
+
+            document.getElementById('todo-list').insertAdjacentHTML('beforeend', sResultDom);
+        },
         createNewTodoString : function (aParam) {
             return Mustache.render(sTemplate, { param : aParam});
         },
@@ -177,8 +181,8 @@ function TODO(sUserName) {
         addNewTodo : function (nId, sTodo) {
             var sDom = DOM_MUTAION.createNewTodoString([{id : nId, todo : sTodo, style : 'style = "opacity : 0"'}]);
 
-            document.getElementById("todo-list").insertAdjacentHTML("beforeend", sDom);
-            var elAdded = document.getElementById("todo-list").lastChild;
+            document.getElementById("todo-list").insertAdjacentHTML("afterbegin", sDom);
+            var elAdded = document.getElementById("todo-list").firstChild;
 
             elAdded.addEventListener("webkitAnimationEnd", function some(e) {
                 elAdded.removeEventListener("webkitAnimationEnd", some);
