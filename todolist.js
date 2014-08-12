@@ -170,6 +170,19 @@ function TODO(sUserName) {
                 }
             });
 
+            aTodos.sort(function(oA, oB) {
+                var dateA = new Date(oA.date);
+                var dateB = new Date(oB.date);
+
+                if (dateA > dateB) {
+                    return 1;
+                } else if (dateA < dateB) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            });
+
             var sResultDom = DOM_MUTAION.createNewTodoString(aTodos);
 
             document.getElementById('todo-list').insertAdjacentHTML('beforeend', sResultDom);
@@ -181,8 +194,8 @@ function TODO(sUserName) {
         addNewTodo : function (nId, sTodo) {
             var sDom = DOM_MUTAION.createNewTodoString([{id : nId, todo : sTodo, style : 'style = "opacity : 0"'}]);
 
-            document.getElementById("todo-list").insertAdjacentHTML("afterbegin", sDom);
-            var elAdded = document.getElementById("todo-list").firstChild;
+            document.getElementById("todo-list").insertAdjacentHTML("beforeend", sDom);
+            var elAdded = document.getElementById("todo-list").lastChild;
 
             elAdded.addEventListener("webkitAnimationEnd", function some(e) {
                 elAdded.removeEventListener("webkitAnimationEnd", some);
