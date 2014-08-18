@@ -15,6 +15,74 @@ function TODO(sUserName) {
         "</li>" +
         "{{/param}}";
 
+    // FILTER 기능 외에도 히스토리를 관리할 일이 있을지도 몰라서 히스토리 객체를 따로 빼놨습니다.
+    var HISTORY_MANAGER = {
+        init : function() {
+            window.addEventListener('popstate', this.setPopstateStatus);
+        },
+
+        setPopstateStatus : function(e) {
+            var nFilterName = e.state === null ? 'all' : e.state.nFilterName;
+
+            FILTER.setFilter(nFilterName);
+        }
+    };
+
+    var FILTER = {
+        CONST_FILTER_ID : {
+            all : 'filter-all',
+            active : 'filter-active',
+            completed : 'filter-completed'
+        },
+
+        init : function() {
+            this.currentFilter = this.CONST_FILTER_ID.all;
+            document.getElementById('filters').addEventListener('click', this.changeFilter.bind(this));
+
+        },
+
+        changeFilter : function(e) {
+            e.preventDefault();
+
+            var elTarget = e.target;
+            var nTagName = elTarget.tagName;
+
+            if (nTagName.toLowerCase() === 'a' && !elTarget.classList.contains('selected')) {
+                var nFilterLocation = elTarget.getAttribute('href');
+                var nFilterName = elTarget.text.toLowerCase();
+
+                history.pushState({nFilterName : nFilterName}, null, nFilterLocation);
+                this.setFilter(nFilterName);
+            }
+        },
+
+        setFilter : function(nFilterName) {
+            var elTargetFilter = document.getElementById('filter-' + nFilterName);
+            this.changeFocus(elTargetFilter);
+
+            var nFilterClassName = nFilterName === 'all' ? '' : 'all-' + nFilterName;
+            document.getElementById('todo-list').className = nFilterClassName;
+        },
+
+        changeFocus : function(elTarget) {
+            document.getElementById(this.currentFilter).classList.remove('selected');
+            elTarget.classList.add('selected');
+            this.currentFilter = elTarget.id;
+        }
+    };
+
+    var INTERNET_CONNECTION = {
+        init : function() {
+            addEventListener("online", this.toggleOfflineClass);
+
+            addEventListener("offline", this.toggleOfflineClass);
+        },
+
+        toggleOfflineClass : function() {
+            document.getElementById('header').classList[navigator.onLine ? "remove" : "add"]('offline');
+        }
+    };
+
     var AJAX = {
         sUserId : sUserName,
 
@@ -33,7 +101,7 @@ function TODO(sUserName) {
                               },
                 methodParam       :   String
             }
-         */
+        */
         call : function (param) {
             var xhr = new XMLHttpRequest();
             xhr.open(param.method, param.url, param.async);
@@ -224,6 +292,10 @@ function TODO(sUserName) {
     this.init = function() {
         document.addEventListener("DOMContentLoaded", function () {
             AJAX.loadAllTodos();
+            INTERNET_CONNECTION.init();
+            FILTER.init();
+            HISTORY_MANAGER.init();
+
             document.getElementById("new-todo").addEventListener("keydown", function (e) {
                 if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {
                     AJAX.saveTodo(e.target);
