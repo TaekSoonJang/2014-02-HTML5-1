@@ -18,6 +18,11 @@
     }
 }
 
+.block-center {
+    display : block;
+    margin : 0 auto;
+}
+
 html,
 body {
 	margin: 0;

@@ -84,6 +84,7 @@ function TODO(sUserName) {
     };
 
     var AJAX = {
+        url : 'http://localhost:8080/todo/api/',
         sUserId : sUserName,
 
         /*
@@ -123,10 +124,11 @@ function TODO(sUserName) {
 
         saveTodo : function(elTarget) {
             var sTodo = elTarget.value;
+            var dTodoDate = document.getElementById('todo-date').value;
             elTarget.value = "";
             this.call({
                 method   : 'PUT',
-                url      : 'http://ui.nhnnext.org:3333/' + this.sUserId,
+                url      : this.url + this.sUserId,
                 async    : true,
                 header   : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8'},
                 callback : {
@@ -141,7 +143,7 @@ function TODO(sUserName) {
                         console.log("fail");
                     }
                 },
-                methodParam : "todo=" + sTodo
+                methodParam : "todo=" + sTodo + "&todoDate=" + dTodoDate
             });
         },
 
@@ -157,7 +159,7 @@ function TODO(sUserName) {
 
             this.call({
                 method  : 'POST',
-                url     : 'http://ui.nhnnext.org:3333/' + this.sUserId + '/' + nTodoId,
+                url     : this.url + this.sUserId + '/' + nTodoId,
                 async   : true,
                 header  : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8' },
                 callback : {
@@ -180,7 +182,7 @@ function TODO(sUserName) {
 
             this.call({
                 method   : 'DELETE',
-                url      : 'http://ui.nhnnext.org:3333/' + this.sUserId + '/' + nTodoId,
+                url      : this.url + this.sUserId + '/' + nTodoId,
                 async    : true,
                 header   : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8' },
                 callback : {
@@ -197,9 +199,10 @@ function TODO(sUserName) {
         },
 
         loadAllTodos : function() {
+            var dTodoDate = document.getElementById('todo-date').value;
             this.call({
                 method   : 'GET',
-                url      : 'http://ui.nhnnext.org:3333/' + this.sUserId,
+                url      : this.url + this.sUserId + "?todoDate=" + dTodoDate,
                 async    : true,
                 header   : { 'Content-Type' : 'application/x-www-form-urlencoded;charset=UTF-8' },
                 callback : {
@@ -230,9 +233,8 @@ function TODO(sUserName) {
     // DOM 조작을 위한 함수를 모아놓은 객체
     var DOM_MUTAION = {
         addAllNewTodo : function(aTodos) {
-            console.log(aTodos);
             aTodos.map(function(oItem) {
-                if (oItem.completed === 1) {
+                if (oItem.completed === true) {
                     oItem.complete = 'class=completed';
                     oItem.checked = 'checked';
                 }
@@ -250,7 +252,6 @@ function TODO(sUserName) {
                     return 0;
                 }
             });
-
             var sResultDom = DOM_MUTAION.createNewTodoString(aTodos);
 
             document.getElementById('todo-list').insertAdjacentHTML('beforeend', sResultDom);
@@ -285,12 +286,36 @@ function TODO(sUserName) {
 
         toggleComplete : function (elTarget) {
             elTarget.parentNode.parentNode.classList.toggle("completed");
+        },
+
+        removeAllTodo : function() {
+            document.getElementById('todo-list').innerHTML = "";
         }
+    };
+
+    var setToday = function() {
+        var today = new Date();
+        var dd = today.getDate();
+        var mm = today.getMonth()+1; //January is 0!
+        var yyyy = today.getFullYear();
+
+        if(dd < 10) {
+            dd = '0' + dd
+        }
+
+        if(mm < 10) {
+            mm = '0' + mm
+        }
+
+        today = yyyy + '-' + mm + '-' + dd;
+
+        document.getElementById('todo-date').value = today;
     };
 
     // 초기화 함수
     this.init = function() {
         document.addEventListener("DOMContentLoaded", function () {
+            setToday();
             AJAX.loadAllTodos();
             INTERNET_CONNECTION.init();
             FILTER.init();
@@ -310,6 +335,11 @@ function TODO(sUserName) {
                 } else if (aClassList.contains("destroy")) {
                     AJAX.deleteTodo(elTarget);
                 }
+            });
+
+            document.getElementById('todo-date').addEventListener("change", function(e) {
+                DOM_MUTAION.removeAllTodo();
+                AJAX.loadAllTodos();
             });
         });
     };
