@@ -24,9 +24,7 @@ var todoDB = {
 
     db : null,
 
-    returnValue : null,
-
-    openDB : function() {
+    openDB : function(fnCallback) {
         console.log("opening db...");
         var req = window.indexedDB.open(this.CONST.DB_NAME, this.CONST.DB_VERSION);
 
@@ -34,6 +32,7 @@ var todoDB = {
             this.db = e.target.result;
             console.log(this.db);
             console.log("opening DB accomplished.");
+            fnCallback();
         }.bind(this));
 
         req.addEventListener("error", function(e) {
@@ -91,16 +90,46 @@ var todoDB = {
         }.bind(this));
     },
 
-    findWithIndex : function(sIndex, sTargetIndex) {
+    /**
+     *
+     * @param sIndex : index title
+     * @param sTargetIndex : target string index you want find
+     * @param fnCallback(oResult) : callback function where you can do whatever you want with your result object
+     */
+    findWithIndex : function(sIndex, sTargetIndex, fnCallback) {
         console.log("trying to find with index..." + sIndex);
 
         var objectStore = this.getObjectStore(this.CONST.DB_STORE_NAME, "readonly");
         var index = objectStore.index(sIndex);
         var request = index.get(sTargetIndex);
         request.addEventListener("success", function(e) {
-            console.log("Result for index (" + sIndex + ") is : " + e.target.result);
-            this.returnValue = e.target.result;
+            var oResult = e.target.result;
+            fnCallback(oResult);
         }.bind(this));
+    },
+
+    /**
+     *
+     * @param sIndex : index title
+     * @param sTargetIndex : target string index you want find
+     * @param fnCallback(aResult) : callback function where you can do whatever you want with your result array
+     */
+    findAllWithIndex : function(sIndex, sTargetIndex, fnCallback) {
+        console.log("trying to find all with index..." + sIndex);
+
+        var objectStore = this.getObjectStore(this.CONST.DB_STORE_NAME, "readonly");
+        var index = objectStore.index(sIndex);
+        var request = index.openCursor();
+        var aResult = [];
+        request.addEventListener('success', function(e) {
+            var cursor = e.target.result;
+            if (cursor) {
+                aResult.push(cursor.value);
+                cursor.continue();
+            } else {
+                fnCallback(aResult);
+            }
+        });
     },
 
     deleteWithKey : function(key) {

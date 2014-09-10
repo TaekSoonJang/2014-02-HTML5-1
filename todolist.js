@@ -346,6 +346,13 @@ function TODO(sUserName) {
             if (navigator.onLine) {
                 AJAX.saveTodo(elTarget);
             }
+        },
+
+        loadAllTodos : function() {
+            var dDate = document.getElementById('todo-date').value;
+            todoDB.findAllWithIndex('todo_date', dDate, function(aData) {
+                DOM_MUTAION.addAllNewTodo(aData);
+            });
         }
     };
 
@@ -353,10 +360,14 @@ function TODO(sUserName) {
     this.init = function() {
         document.addEventListener("DOMContentLoaded", function () {
             setToday();
-            todoDB.openDB();
-            if (navigator.onLine) {
-                AJAX.loadAllTodos();
-            }
+            todoDB.openDB(function() {
+                // now in testing
+                if (!navigator.onLine) {
+                    AJAX.loadAllTodos();
+                } else {
+                    CONTROLLER.loadAllTodos();
+                }
+            });
             INTERNET_CONNECTION.init();
             FILTER.init();
             HISTORY_MANAGER.init();
