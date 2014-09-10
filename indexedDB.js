@@ -12,12 +12,13 @@ var todoDB = {
        nickname : string
        completed : bool
        create_date : date
+       synced : bool
      ]
     */
 
     CONST : {
         DB_NAME : "todolist",
-        DB_VERSION : 1,
+        DB_VERSION : 2,
         DB_STORE_NAME : "todos"
     },
 
@@ -36,16 +37,19 @@ var todoDB = {
         }.bind(this));
 
         req.addEventListener("error", function(e) {
-            console.log("open DB Error : ", e.target.errorCode);
+            console.log("open DB Error : ", e.error);
         });
 
         req.addEventListener("upgradeneeded", function(e) {
             console.log("open DB upgradeneeded");
-            var store = e.currentTarget.result.createObjectStore(
+
+            var db = e.currentTarget.result;
+            db.deleteObjectStore(this.CONST.DB_STORE_NAME);
+            var store = db.createObjectStore(
                 this.CONST.DB_STORE_NAME, {keyPath : 'id', autoIncrement:true}
             );
 
-            store.createIndex('nickname', 'nickname', {unique : true});
+            store.createIndex('nickname', 'nickname', {unique : false});
             store.createIndex('todo_date', 'todo_date', {unique : false});
             store.createIndex('completed', 'completed', {unique : false});
 
@@ -59,7 +63,7 @@ var todoDB = {
             console.log("getting transaction accomplished");
         });
         transaction.addEventListener("error", function(e){
-            console.log("getting transaction error : ", e.target.errorCode);
+            console.log("getting transaction error : ", e.error);
         });
 
         return transaction.objectStore(storeName);

@@ -1,4 +1,5 @@
 function TODO(sUserName) {
+    var USER_NAME = sUserName;
 
     var CONST_NUM = {
         ENTER_KEYCODE : 13
@@ -15,7 +16,6 @@ function TODO(sUserName) {
         "</li>" +
         "{{/param}}";
 
-    // FILTER 기능 외에도 히스토리를 관리할 일이 있을지도 몰라서 히스토리 객체를 따로 빼놨습니다.
     var HISTORY_MANAGER = {
         init : function() {
             window.addEventListener('popstate', this.setPopstateStatus);
@@ -312,18 +312,58 @@ function TODO(sUserName) {
         document.getElementById('todo-date').value = today;
     };
 
+    var CONTROLLER = {
+        /*
+         Data Structure
+
+         [
+         id : number
+         todo_date : date
+         todo : string
+         nickname : string
+         completed : bool
+         create_date : date
+         synced : bool
+         ]
+         */
+        addTodo : function(elTarget) {
+            var sTodo = elTarget.value;
+            var dTodoDate = document.getElementById('todo-date').value;
+
+            var oData = {
+                todo_date : dTodoDate,
+                todo : sTodo,
+                nickname : USER_NAME,
+                completed : false,
+                create_date : dTodoDate,
+                synced : false
+            };
+
+            var sTodo = elTarget.value;
+            var dTodoDate = document.getElementById('todo-date').value;
+
+            todoDB.insert(oData);
+            if (navigator.onLine) {
+                AJAX.saveTodo(elTarget);
+            }
+        }
+    };
+
     // 초기화 함수
     this.init = function() {
         document.addEventListener("DOMContentLoaded", function () {
             setToday();
-            AJAX.loadAllTodos();
+            todoDB.openDB();
+            if (navigator.onLine) {
+                AJAX.loadAllTodos();
+            }
             INTERNET_CONNECTION.init();
             FILTER.init();
             HISTORY_MANAGER.init();
 
             document.getElementById("new-todo").addEventListener("keydown", function (e) {
                 if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {
-                    AJAX.saveTodo(e.target);
+                    CONTROLLER.addTodo(e.target);
                 }
             });
 
