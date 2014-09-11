@@ -68,13 +68,15 @@ var todoDB = {
         return transaction.objectStore(storeName);
     },
 
-    insert : function(oData) {
+    insert : function(oData, fnCallback) {
         console.log("trying to insert data..." + oData);
 
         var objectStore = this.getObjectStore(this.CONST.DB_STORE_NAME, "readwrite");
         var request = objectStore.add(oData);
         request.addEventListener("success", function(e) {
-            console.log("insert accomplished. + ", e.target.result);
+            var nId = e.target.result;
+            console.log("insert accomplished. + ", nId);
+            fnCallback(nId);
         });
     },
 
@@ -119,7 +121,8 @@ var todoDB = {
 
         var objectStore = this.getObjectStore(this.CONST.DB_STORE_NAME, "readonly");
         var index = objectStore.index(sIndex);
-        var request = index.openCursor();
+        var singleKeyRange = IDBKeyRange.only(sTargetIndex);
+        var request = index.openCursor(singleKeyRange);
         var aResult = [];
         request.addEventListener('success', function(e) {
             var cursor = e.target.result;

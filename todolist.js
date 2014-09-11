@@ -359,10 +359,9 @@ function TODO(sUserName) {
                 synced : false
             };
 
-            var sTodo = elTarget.value;
-            var dTodoDate = document.getElementById('todo-date').value;
-
-            todoDB.insert(oData);
+            todoDB.insert(oData, function(nId) {
+                DOM_MUTAION.addNewTodo(nId, sTodo);
+            });
             if (navigator.onLine) {
                 AJAX.saveTodo(elTarget);
             }
@@ -370,9 +369,14 @@ function TODO(sUserName) {
 
         loadAllTodos : function() {
             var dDate = document.getElementById('todo-date').value;
-            todoDB.findAllWithIndex('todo_date', dDate, function(aData) {
-                DOM_MUTAION.addAllNewTodo(aData);
-            });
+            // for testing (online <-> offline)
+            if (!navigator.onLine) {
+                AJAX.loadAllTodos();
+            } else {
+                todoDB.findAllWithIndex('todo_date', dDate, function(aData) {
+                    DOM_MUTAION.addAllNewTodo(aData);
+                });
+            }
         },
 
         toggleCompleteTodo : function(elTarget) {
@@ -408,12 +412,7 @@ function TODO(sUserName) {
         document.addEventListener("DOMContentLoaded", function() {
             UTIL.setToday();
             todoDB.openDB(function() {
-                // now in testing (online <-> offline)
-                if (!navigator.onLine) {
-                    AJAX.loadAllTodos();
-                } else {
-                    CONTROLLER.loadAllTodos();
-                }
+                CONTROLLER.loadAllTodos();
             });
             INTERNET_CONNECTION.init();
             FILTER.init();
@@ -437,7 +436,8 @@ function TODO(sUserName) {
 
             document.getElementById('todo-date').addEventListener("change", function(e) {
                 DOM_MUTAION.removeAllTodo();
-                AJAX.loadAllTodos();
+                // for testing
+                CONTROLLER.loadAllTodos();
             });
         });
     };
