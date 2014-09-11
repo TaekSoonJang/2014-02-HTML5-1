@@ -142,16 +142,14 @@ var todoDB = {
         });
     },
 
-    update  : function(key, oChangeData) {
+    update  : function(key, fnUpdate) {
         console.log("trying to find with key..." + key);
 
         var objectStore = this.getObjectStore(this.CONST.DB_STORE_NAME, "readwrite");
         var request = objectStore.get(key);
         request.addEventListener("success", function(e) {
             var oData = e.target.result;
-            for (var key in oChangeData) {
-                oData[key] = oChangeData[key];
-            }
+            fnUpdate(oData);
             var requestUpdate = objectStore.put(oData);
             requestUpdate.addEventListener("success", function(e) {
                 console.log("data updated! : " + oData);

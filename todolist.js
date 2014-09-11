@@ -147,7 +147,7 @@ function TODO(sUserName) {
             });
         },
 
-        completeTodo : function(elTarget) {
+        toggleCompleteTodo : function(elTarget) {
             var liTodo = elTarget.parentNode.parentNode;
             var nTodoId = liTodo.dataset.id;
             // -> completed
@@ -293,6 +293,26 @@ function TODO(sUserName) {
         }
     };
 
+    var UTIL = {
+        setToday : function() {
+            var today = new Date();
+            var dd = today.getDate();
+            var mm = today.getMonth()+1; //January is 0!
+            var yyyy = today.getFullYear();
+
+            if(dd < 10) {
+                dd = '0' + dd
+            }
+
+            if(mm < 10) {
+                mm = '0' + mm
+            }
+
+            today = yyyy + '-' + mm + '-' + dd;
+
+            document.getElementById('todo-date').value = today;
+        }
+    }
     var setToday = function() {
         var today = new Date();
         var dd = today.getDate();
@@ -353,15 +373,42 @@ function TODO(sUserName) {
             todoDB.findAllWithIndex('todo_date', dDate, function(aData) {
                 DOM_MUTAION.addAllNewTodo(aData);
             });
+        },
+
+        toggleCompleteTodo : function(elTarget) {
+            var liTodo = elTarget.parentNode.parentNode;
+            // When getting value from attribute, it is string
+            var nId = parseInt(liTodo.dataset.id, 10);
+            var bCompleted = liTodo.classList.contains('completed') ? false : true;
+            DOM_MUTAION.toggleComplete(elTarget);
+            todoDB.update(nId, function(oData) {
+                oData.completed = bCompleted;
+            });
+            if (navigator.onLine) {
+                AJAX.toggleCompleteTodo(elTarget);
+            }
+        },
+
+        deleteTodo : function(elTarget) {
+            var liTodo = elTarget.parentNode.parentNode;
+            var nId = parseInt(liTodo.dataset.id, 10);
+
+            todoDB.deleteWithKey(nId);
+            // if an item has been deleted from indexedDB,
+            // how to sync it with server?
+            if (navigator.onLine) {
+                AJAX.deleteTodo(elTarget);
+            }
+            DOM_MUTAION.removeTodo(liTodo);
         }
     };
 
     // 초기화 함수
     this.init = function() {
-        document.addEventListener("DOMContentLoaded", function () {
-            setToday();
+        document.addEventListener("DOMContentLoaded", function() {
+            UTIL.setToday();
             todoDB.openDB(function() {
-                // now in testing
+                // now in testing (online <-> offline)
                 if (!navigator.onLine) {
                     AJAX.loadAllTodos();
                 } else {
@@ -372,7 +419,7 @@ function TODO(sUserName) {
             FILTER.init();
             HISTORY_MANAGER.init();
 
-            document.getElementById("new-todo").addEventListener("keydown", function (e) {
+            document.getElementById("new-todo").addEventListener("keydown", function(e) {
                 if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {
                     CONTROLLER.addTodo(e.target);
                 }
@@ -382,9 +429,9 @@ function TODO(sUserName) {
                 var elTarget = e.target;
                 var aClassList = elTarget.classList;
                 if (aClassList.contains("toggle")) {
-                    AJAX.completeTodo(elTarget);
+                    CONTROLLER.toggleCompleteTodo(elTarget);
                 } else if (aClassList.contains("destroy")) {
-                    AJAX.deleteTodo(elTarget);
+                    CONTROLLER.deleteTodo(elTarget);
                 }
             });
 
