@@ -313,24 +313,6 @@ function TODO(sUserName) {
             document.getElementById('todo-date').value = today;
         }
     }
-    var setToday = function() {
-        var today = new Date();
-        var dd = today.getDate();
-        var mm = today.getMonth()+1; //January is 0!
-        var yyyy = today.getFullYear();
-
-        if(dd < 10) {
-            dd = '0' + dd
-        }
-
-        if(mm < 10) {
-            mm = '0' + mm
-        }
-
-        today = yyyy + '-' + mm + '-' + dd;
-
-        document.getElementById('todo-date').value = today;
-    };
 
     var CONTROLLER = {
         /*
@@ -345,9 +327,10 @@ function TODO(sUserName) {
          create_date : date
          synced : bool
          ]
-         */
+       */
         addTodo : function(elTarget) {
             var sTodo = elTarget.value;
+            elTarget.value = "";
             var dTodoDate = document.getElementById('todo-date').value;
 
             var oData = {
