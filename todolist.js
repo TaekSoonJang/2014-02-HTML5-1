@@ -12,12 +12,9 @@ function TODO(sUserName) {
                 "<input class='toggle' type='checkbox' {{checked}}>" +
                 "<label>{{todo}}</label>" +
                 "<button class='destroy'></button>" +
-                "{{ #attached }}" +
-                    "{{ #isImg }}" +
-                        "<img class='attached-thumbnail'/>" +
-                    "{{ /isImg }}" +
-                    "<a href='#' class='attached-view'>{{attached.name}}</a>" +
-                "{{ /attached}}" +
+                "{{ #attached.file }}" +
+                    "<a href='#' data-url='{{ attached.url }}' class='attached-view' target='_blank'>{{attached.file.name}}</a>" +
+                "{{ /attached.file }}" +
             "</div>" +
         "</li>" +
         "{{/param}}";
@@ -269,12 +266,12 @@ function TODO(sUserName) {
             return Mustache.render(sTemplate, { param : aParam});
         },
 
-        addNewTodo : function (nId, sTodo, attached) {
+        addNewTodo : function (nId, oData) {
             var sDom = DOM_MUTAION.createNewTodoString([{
                                                          id : nId,
-                                                         todo : sTodo,
+                                                         todo : oData.todo,
                                                          liStyle : 'opacity : 0',
-                                                         attached : attached
+                                                         attached : oData.attached
                                                       }]);
 
             document.getElementById("todo-list").insertAdjacentHTML("beforeend", sDom);
@@ -328,20 +325,29 @@ function TODO(sUserName) {
         }
     }
 
-    var FILE = {
+    var ATTACHED_FILE = {
+        init : function() {
+            this.setPreview();
+        },
+
         setPreview : function() {
             var elInputFile = document.getElementById('attached');
             var elImgPreview = document.getElementById('attached-preview');
             elInputFile.addEventListener('change', function(e) {
                 elImgPreview.style.display = 'none';
-                if (e.target.files[0].type.match(/image.*/)) {
-                    elImgPreview.style.display = 'block';
+                var attachedFile = e.target.files[0];
+
+                if (!attachedFile) return;
+
+                elInputFile.files[0].url = window.URL.createObjectURL(attachedFile);
+
+                if (attachedFile.type.match(/image.*/)) {
                     var reader = new FileReader();
-                    reader.addEventListener('load', function(elImgPreview) {
-                        return function(e) {
-                            elImgPreview.src = e.target.result;
-                        }
-                    }(elImgPreview));
+
+                    reader.addEventListener('load', function(e) {
+                        elImgPreview.style.display = 'block';
+                        elImgPreview.src = e.target.result;
+                    });
 
                     reader.readAsDataURL(e.target.files[0]);
                 }
@@ -351,6 +357,10 @@ function TODO(sUserName) {
         resetAttached : function() {
             document.getElementById('attached').value = '';
             document.getElementById('attached-preview').style.display = 'none';
+        },
+
+        openAttached : function(elTarget) {
+            window.open(elTarget.dataset.url, '_blank');
         }
     }
 
@@ -359,21 +369,21 @@ function TODO(sUserName) {
          Data Structure
 
          [
-         id : number
-         todo_date : date
-         todo : string
-         nickname : string
-         completed : bool
-         create_date : date
-         synced : bool,
-         (if exist) attached : sFileName
+             id : number
+             todo_date : date
+             todo : string
+             nickname : string
+             completed : bool
+             create_date : date
+             synced : bool,
+             (if exist) attached : sFileName
          ]
        */
         addTodo : function(elTarget) {
             var sTodo = elTarget.value;
             elTarget.value = "";
             var dTodoDate = document.getElementById('todo-date').value;
-            var attached = document.getElementById('attached').files[0];
+            var attachedFile = document.getElementById('attached').files[0];
 
             var oData = {
                 todo_date : dTodoDate,
@@ -382,21 +392,20 @@ function TODO(sUserName) {
                 completed : false,
                 create_date : dTodoDate,
                 synced : false,
-                attached : attached
+                attached : {
+                    file : attachedFile,
+                    url : window.URL.createObjectURL(attachedFile)
+                }
             };
 
-            if (attached.type.match(/image.*/)) {
-                oData.isImg = true;
-            }
-
             todoDB.insert(oData, function(nId) {
-                DOM_MUTAION.addNewTodo(nId, sTodo, attached);
+                DOM_MUTAION.addNewTodo(nId, oData);
             });
             if (navigator.onLine) {
                 AJAX.saveTodo(elTarget);
             }
 
-            FILE.resetAttached();
+            ATTACHED_FILE.resetAttached();
         },
 
         loadAllTodos : function() {
@@ -449,7 +458,7 @@ function TODO(sUserName) {
             INTERNET_CONNECTION.init();
             FILTER.init();
             HISTORY_MANAGER.init();
-            FILE.setPreview();
+            ATTACHED_FILE.init();
 
             document.getElementById("new-todo").addEventListener("keydown", function(e) {
                 if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {
@@ -464,6 +473,9 @@ function TODO(sUserName) {
                     CONTROLLER.toggleCompleteTodo(elTarget);
                 } else if (aClassList.contains("destroy")) {
                     CONTROLLER.deleteTodo(elTarget);
+                } else if (aClassList.contains('attached-view')) {
+                    e.preventDefault();
+                    ATTACHED_FILE.openAttached(e.target);
                 }
             });
 
