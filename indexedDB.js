@@ -80,7 +80,7 @@ var todoDB = {
         });
     },
 
-    findWithKey : function(key) {
+    findWithKey : function(key, fnCallback) {
         console.log("trying to find with key..." + key);
 
         var objectStore = this.getObjectStore(this.CONST.DB_STORE_NAME, "readonly");
@@ -88,7 +88,7 @@ var todoDB = {
 
         request.addEventListener("success", function(e) {
             console.log("Result for key (" + key + ") is : " + e.target.result);
-            this.returnValue = e.target.result;
+            fnCallback(nId);
         }.bind(this));
     },
 
@@ -145,6 +145,11 @@ var todoDB = {
         });
     },
 
+    /**
+     *
+     * @param key
+     * @param fnUpdate(oData) : callback function where you can update 'oData'
+     */
     update  : function(key, fnUpdate) {
         console.log("trying to find with key..." + key);
 

@@ -7,11 +7,17 @@ function TODO(sUserName) {
 
     var sTemplate =
         "{{#param}}" +
-        "<li {{complete}}  data-id='{{id}}' {{style}}>" +
+        "<li {{complete}}  data-id='{{id}}' style='{{ liStyle }}'>" +
             "<div class='view'>" +
                 "<input class='toggle' type='checkbox' {{checked}}>" +
                 "<label>{{todo}}</label>" +
                 "<button class='destroy'></button>" +
+                "{{ #attached }}" +
+                    "{{ #isImg }}" +
+                        "<img class='attached-thumbnail'/>" +
+                    "{{ /isImg }}" +
+                    "<a href='#' class='attached-view'>{{attached.name}}</a>" +
+                "{{ /attached}}" +
             "</div>" +
         "</li>" +
         "{{/param}}";
@@ -134,9 +140,11 @@ function TODO(sUserName) {
                 callback : {
                     success : function(sRes) {
                         var oResponse = JSON.parse(sRes);
-                        var nInsertId = oResponse.insertId;
+                        var nInsertId = oResponse.id;
                         console.log("saved");
-                        DOM_MUTAION.addNewTodo(nInsertId, sTodo);
+                        todoDB.update(nInsertId, function(oData) {
+                            oData.synced = true;
+                        });
                     },
 
                     fail    : function(sRes) {
@@ -234,6 +242,7 @@ function TODO(sUserName) {
     var DOM_MUTAION = {
         addAllNewTodo : function(aTodos) {
             aTodos.map(function(oItem) {
+                // prework for using this object in template
                 if (oItem.completed === true) {
                     oItem.complete = 'class=completed';
                     oItem.checked = 'checked';
@@ -260,8 +269,13 @@ function TODO(sUserName) {
             return Mustache.render(sTemplate, { param : aParam});
         },
 
-        addNewTodo : function (nId, sTodo) {
-            var sDom = DOM_MUTAION.createNewTodoString([{id : nId, todo : sTodo, style : 'style = "opacity : 0"'}]);
+        addNewTodo : function (nId, sTodo, attached) {
+            var sDom = DOM_MUTAION.createNewTodoString([{
+                                                         id : nId,
+                                                         todo : sTodo,
+                                                         liStyle : 'opacity : 0',
+                                                         attached : attached
+                                                      }]);
 
             document.getElementById("todo-list").insertAdjacentHTML("beforeend", sDom);
             var elAdded = document.getElementById("todo-list").lastChild;
@@ -311,6 +325,14 @@ function TODO(sUserName) {
             today = yyyy + '-' + mm + '-' + dd;
 
             document.getElementById('todo-date').value = today;
+        },
+        getFileNameForView : function(sFileName) {
+            var nLimit = 80;
+            if (sFileName.length > nLimit) {
+                sFileName = sFileName.substr(0, nLimit) + '...';
+            }
+
+            return sFileName;
         }
     }
 
@@ -325,13 +347,15 @@ function TODO(sUserName) {
          nickname : string
          completed : bool
          create_date : date
-         synced : bool
+         synced : bool,
+         (if exist) attached : sFileName
          ]
        */
         addTodo : function(elTarget) {
             var sTodo = elTarget.value;
             elTarget.value = "";
             var dTodoDate = document.getElementById('todo-date').value;
+            var attached = document.getElementById('attached').files[0];
 
             var oData = {
                 todo_date : dTodoDate,
@@ -339,15 +363,22 @@ function TODO(sUserName) {
                 nickname : USER_NAME,
                 completed : false,
                 create_date : dTodoDate,
-                synced : false
+                synced : false,
+                attached : attached
             };
 
+            if (attached.type.match(/image.*/)) {
+                oData.isImg = true;
+            }
+
             todoDB.insert(oData, function(nId) {
-                DOM_MUTAION.addNewTodo(nId, sTodo);
+                DOM_MUTAION.addNewTodo(nId, sTodo, attached);
             });
             if (navigator.onLine) {
                 AJAX.saveTodo(elTarget);
             }
+
+            document.getElementById('attached').value = '';
         },
 
         loadAllTodos : function() {

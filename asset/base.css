@@ -18,6 +18,11 @@
     }
 }
 
+.attached-view {
+    margin-left : 60px;
+    font-size : 12px;
+}
+
 .block-center {
     display : block;
     margin : 0 auto;
