@@ -325,14 +325,32 @@ function TODO(sUserName) {
             today = yyyy + '-' + mm + '-' + dd;
 
             document.getElementById('todo-date').value = today;
-        },
-        getFileNameForView : function(sFileName) {
-            var nLimit = 80;
-            if (sFileName.length > nLimit) {
-                sFileName = sFileName.substr(0, nLimit) + '...';
-            }
+        }
+    }
 
-            return sFileName;
+    var FILE = {
+        setPreview : function() {
+            var elInputFile = document.getElementById('attached');
+            var elImgPreview = document.getElementById('attached-preview');
+            elInputFile.addEventListener('change', function(e) {
+                elImgPreview.style.display = 'none';
+                if (e.target.files[0].type.match(/image.*/)) {
+                    elImgPreview.style.display = 'block';
+                    var reader = new FileReader();
+                    reader.addEventListener('load', function(elImgPreview) {
+                        return function(e) {
+                            elImgPreview.src = e.target.result;
+                        }
+                    }(elImgPreview));
+
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+        },
+
+        resetAttached : function() {
+            document.getElementById('attached').value = '';
+            document.getElementById('attached-preview').style.display = 'none';
         }
     }
 
@@ -378,7 +396,7 @@ function TODO(sUserName) {
                 AJAX.saveTodo(elTarget);
             }
 
-            document.getElementById('attached').value = '';
+            FILE.resetAttached();
         },
 
         loadAllTodos : function() {
@@ -431,6 +449,7 @@ function TODO(sUserName) {
             INTERNET_CONNECTION.init();
             FILTER.init();
             HISTORY_MANAGER.init();
+            FILE.setPreview();
 
             document.getElementById("new-todo").addEventListener("keydown", function(e) {
                 if (e.keyCode === CONST_NUM.ENTER_KEYCODE) {

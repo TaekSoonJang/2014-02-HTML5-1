@@ -18,6 +18,13 @@
     }
 }
 
+#attached-preview {
+    display : none;
+    width : 300px;
+    margin : 10px auto;
+    border : 1px solid #bfbfbf;
+}
+
 .attached-view {
     margin-left : 60px;
     font-size : 12px;
