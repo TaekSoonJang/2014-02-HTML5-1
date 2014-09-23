@@ -326,27 +326,46 @@ function TODO(sUserName) {
     }
 
     var ATTACHED_FILE = {
+        ELEMENT : {
+            elInputFile : document.getElementById('attached'),
+            elImgPreview : document.getElementById('attached-preview'),
+            elAttachedName : document.getElementById('attached-name'),
+            elUploadButton : document.querySelector('.upload-attached')
+        },
+
         init : function() {
+            this.hiddenInput();
             this.setPreview();
         },
 
+        hiddenInput : function() {
+            this.ELEMENT.elUploadButton.addEventListener('click', function(e) {
+                this.ELEMENT.elInputFile.click();
+            }.bind(this));
+        },
+
         setPreview : function() {
-            var elInputFile = document.getElementById('attached');
-            var elImgPreview = document.getElementById('attached-preview');
-            elInputFile.addEventListener('change', function(e) {
-                elImgPreview.style.display = 'none';
+            var oFileElem = this.ELEMENT;
+            oFileElem.elInputFile.addEventListener('change', function(e) {
+                oFileElem.elImgPreview.style.display = 'none';
                 var attachedFile = e.target.files[0];
 
-                if (!attachedFile) return;
+                if (!attachedFile) {
+                    oFileElem.elAttachedName.style.display = 'none';
+                    return false;
+                }
+                oFileElem.elInputFile.files[0].url = window.URL.createObjectURL(attachedFile);
 
-                elInputFile.files[0].url = window.URL.createObjectURL(attachedFile);
+                oFileElem.elAttachedName.innerHTML = attachedFile.name;
+                oFileElem.elAttachedName.href = oFileElem.elInputFile.files[0].url;
+                oFileElem.elAttachedName.style.display = 'inline-block';
 
                 if (attachedFile.type.match(/image.*/)) {
                     var reader = new FileReader();
 
                     reader.addEventListener('load', function(e) {
-                        elImgPreview.style.display = 'block';
-                        elImgPreview.src = e.target.result;
+                        oFileElem.elImgPreview.style.display = 'block';
+                        oFileElem.elImgPreview.src = e.target.result;
                     });
 
                     reader.readAsDataURL(e.target.files[0]);
@@ -355,8 +374,9 @@ function TODO(sUserName) {
         },
 
         resetAttached : function() {
-            document.getElementById('attached').value = '';
-            document.getElementById('attached-preview').style.display = 'none';
+            this.ELEMENT.elInputFile.value = '';
+            this.ELEMENT.elImgPreview.style.display = 'none';
+            this.ELEMENT.elAttachedName.style.display = 'none';
         },
 
         openAttached : function(elTarget) {

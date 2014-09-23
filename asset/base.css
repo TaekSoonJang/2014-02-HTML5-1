@@ -18,6 +18,30 @@
     }
 }
 
+#attached-name {
+    display : inline-block;
+    margin-top : 10px;
+    margin-bottom : 10px;
+    font-size : 1.5em;
+    display : none;
+}
+
+.upload-attached {
+    z-index: 10;
+    position : absolute;
+    top : 60px;
+    right : 30px;
+}
+
+.upload-attached:hover {
+    color : #ed1c24;
+    cursor : pointer;
+}
+
+#attached {
+    display : none;
+}
+
 #attached-preview {
     display : none;
     width : 300px;
@@ -128,6 +152,8 @@ input[type="checkbox"] {
 #header {
 	padding-top: 15px;
 	border-radius: inherit;
+    text-align: center;
+
 }
 
 #header:before {

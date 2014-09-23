@@ -4,6 +4,7 @@
 		<meta charset="utf-8">
 		<title>HTML5 Programming - 1 Class</title>
 		<link rel="stylesheet" href="asset/base.css">
+		<link rel="stylesheet" href="asset/font-awesome.css">
         <script type="text/javascript" src="mustache.js"></script>
 		<script type="text/javascript" src="todolist.js"></script>
 		<script type="text/javascript" src="indexedDB.js"></script>
@@ -14,8 +15,10 @@
 				<h1>todos</h1>
                 <input class="block-center" type="date" id="todo-date" />
 				<input id="new-todo" placeholder="What needs to be done?" autofocus>
+                <button class="fa-2x fa fa-upload upload-attached"></button>
                 <input type="file" id="attached" />
                 <img id="attached-preview" />
+                <a id="attached-name" target="_blank"></a>
 			</header>
 			<section id="main">
 				<input id="toggle-all" type="checkbox">
