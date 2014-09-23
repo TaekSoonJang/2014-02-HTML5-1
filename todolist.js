@@ -323,7 +323,7 @@ function TODO(sUserName) {
 
             document.getElementById('todo-date').value = today;
         }
-    }
+    };
 
     var ATTACHED_FILE = {
         ELEMENT : {
@@ -381,11 +381,34 @@ function TODO(sUserName) {
 
         openAttached : function(elTarget) {
             window.open(elTarget.dataset.url, '_blank');
+        },
+
+        upload : function(file) {
+            var reader = new FileReader();
+            var xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    var nPercentage = Math.round((e.loaded * 100) / e.total);
+                    console.log(nPercentage);
+                }
+            });
+
+            xhr.addEventListener('load', function(e) {
+                console.log(xhr.responseText);
+            });
+
+            xhr.open('POST', AJAX.url + 'upload');
+
+            var data = new FormData();
+            data.append('file', file);
+
+            xhr.send(data);
         }
-    }
+    };
 
     var CONTROLLER = {
-        /*
+         /*
          Data Structure
 
          [
@@ -398,7 +421,7 @@ function TODO(sUserName) {
              synced : bool,
              (if exist) attached : sFileName
          ]
-       */
+        */
         addTodo : function(elTarget) {
             var sTodo = elTarget.value;
             elTarget.value = "";
@@ -422,6 +445,7 @@ function TODO(sUserName) {
                 DOM_MUTAION.addNewTodo(nId, oData);
             });
             if (navigator.onLine) {
+                if (attachedFile) ATTACHED_FILE.upload(attachedFile);
                 AJAX.saveTodo(elTarget);
             }
 
